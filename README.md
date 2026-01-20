@@ -10,6 +10,16 @@ A real-time robot swarm simulation and visualization platform. The project utili
 
 - **Web (`/web`)**: Visualization frontend powered by React + Vite + React Three Fiber.
 
+## Codebase Overview
+
+This project is composed of three main files that work in concert:
+
+-   `simulation/src/main.rs`: This is the engine of the simulation. It runs an infinite loop where it continuously generates data (in this case, the position of a robot) and sends it over UDP to the Gateway service. It's written in Rust for high performance.
+
+-   `gateway/main.go`: This service acts as a bridge. It listens for the UDP data packets from the Rust simulation. As soon as it receives data, it relays it to all connected web clients using WebSockets. This allows for real-time communication from the backend to the frontend.
+
+-   `web/src/App.tsx`: This is the user-facing part of the application. It's a React component that establishes a WebSocket connection to the Go gateway. It then listens for incoming messages and displays the data on the screen, providing a live view of the simulation.
+
 ## Quick Start (Docker)
 
 The most efficient way to spin up the entire development environment:
@@ -91,6 +101,16 @@ To ensure type safety and consistent formatting, install the following extension
 - `ESLint` / `Prettier` (for `/web`)
 
 Formatting is applied automatically on save via `.vscode/settings.json`.
+
+## Technical concepts
+
+### UDP
+
+Protocol for sending data packages without waiting for confirmation of receive, super quick
+
+### WebSocket
+
+A pipe between browser and server, built on TCP, full duplex, the only way to stream data do the browser by server (push) without constant polling (sending requests from the browser)
 
 ## 📝 Architectural Decision Records (ADR)
 

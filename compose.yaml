@@ -20,7 +20,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: robot_gateway_golang
     ports:
-      - "8080:8080" # Port for websockets
+      - "8081:8080" # Port for websockets, 8080 on host was not running correctly
     volumes:
       - ./gateway:/app
     depends_on:
@@ -38,7 +38,7 @@ services:
       - "5173:5173"
     volumes:
       - ./web:/app
-      - /app/
+      - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true # to make sure that hot-reload will work
     networks:
