@@ -9,6 +9,10 @@ use std::{thread, time}; // For pausing the execution thread and handling time d
 /// or a boxed error that can be of any type implementing the `Error` trait on failure.
 /// This is a common way to handle errors in Rust.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // --- Wait for Gateway to start ---
+    println!("Simulation service started. Waiting 3 seconds for gateway to be ready...");
+    thread::sleep(time::Duration::from_secs(3));
+
     // --- Network Setup ---
 
     // Bind a UDP socket to an available port on any network interface.
