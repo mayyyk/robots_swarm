@@ -1,0 +1,49 @@
+name: robot_sim_app
+
+services:
+  # RUST (Brain)
+  simulation:
+    build:
+      context: ./simulation
+      dockerfile: Dockerfile.dev
+    container_name: robot_sim_core
+    volumes:
+      - ./simulation:/app
+    command: cargo run
+    networks:
+      - robot_net
+
+  # GO (Communication)
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile.dev
+    container_name: robot_gateway
+    ports:
+      - "8080:8080" # Port for websockets
+    volumes:
+      - ./gateway:/app
+    depends_on:
+      - simulation
+    networks:
+      - robot_net
+
+  # VITE/REACT (Visualization)
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.dev
+    container_name: robot_web
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./web:/app
+      - /app/
+    environment:
+      - CHOKIDAR_USEPOLLING=true # to make sure that hot-reload will work
+    networks:
+      - robot_net
+
+networks:
+  robot_net:
+    driver: bridge # default driver

@@ -1,0 +1,9 @@
+sudo apt update
+sudo apt install curl git build-essential
+
+installing rust, go, node/nvm
+
+RUST: cargo new simulation --lib
+GO: go mod init gateway
+VITE: npm create vite@latest web -- --template react-ts
+

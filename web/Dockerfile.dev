@@ -1,0 +1,14 @@
+FROM node:lts
+
+WORKDIR /app
+
+COPY package*.json ./
+
+# Runs only when package.json is changed:
+RUN npm install 
+
+COPY . .
+
+# --host unblocks the network access 
+CMD ["npm", "run", "dev", "--", "--host"]
+

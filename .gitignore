@@ -1,0 +1,12 @@
+# --- OS & IDE ---
+.DS_Store
+.vscode/
+.idea/
+
+# --- RUST ---
+/simulation/target/
+
+# --- GO --- 
+# (binary name:)
+/gateway/gateway  
+
