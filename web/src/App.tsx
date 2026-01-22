@@ -1,16 +1,12 @@
 import { OrbitControls, Grid } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useState } from "react";
-import { Vector3, Box3 } from "three";
+import { Vector3, Box3, type Vector3Tuple } from "three";
 import { VectorArrow } from "./components/VectorArrow";
 import "./App.css";
 
 // Type definition for a single vector.
-type Vector = {
-  x: number;
-  y: number;
-  z: number;
-};
+type Vector = [number, number, number];
 
 // Colors for the vectors to make them distinguishable.
 const COLORS = ["#ff6347", "#4682b4", "#3cb371", "#ffd700", "#6a5acd"];
@@ -37,7 +33,7 @@ function CameraRig() {
  */
 function App() {
   // State to hold the array of vectors received from the simulation.
-  const [vectors, setVectors] = useState<Vector[]>([]);
+  const [vectors, setVectors] = useState<Vector3Tuple[]>([]);
 
   // Effect to establish and manage the WebSocket connection.
   useEffect(() => {
@@ -51,7 +47,7 @@ function App() {
     socket.onmessage = (event) => {
       try {
         // Parse the JSON data from the server.
-        const parsedData: Vector[] = JSON.parse(event.data);
+        const parsedData: Vector3Tuple[] = JSON.parse(event.data);
         setVectors(parsedData);
         console.log(parsedData);
       } catch (error) {
@@ -67,7 +63,7 @@ function App() {
   }, []); // Empty dependency array ensures this runs only once.
 
   return (
-    <div style={{ height: "100vh", background: "#222" }}>
+    <div style={{ width: "100vw", height: "100vh", background: "#222" }}>
       <Canvas>
         {/* Lighting */}
         <ambientLight intensity={0.5} />
@@ -86,15 +82,18 @@ function App() {
         />
 
         {/* Render the vectors */}
-        {vectors.map((vec, index) => (
-          <VectorArrow
-            key={index}
-            start={[0, 0, 0]}
-            end={[vec.x, vec.y, vec.z]}
-            color={COLORS[index % COLORS.length]}
-            label={`v${index + 1}`}
-          />
-        ))}
+        {vectors.map((vec, index) => {
+          const [vx, vy, vz] = vec;
+          return (
+            <VectorArrow
+              key={index}
+              start={[0, 0, 0]}
+              end={[vx, vy, vz]} // Przekazujemy wartości po indeksach
+              color={COLORS[index % COLORS.length]}
+              label={`v${index + 1}`}
+            />
+          );
+        })}
       </Canvas>
     </div>
   );

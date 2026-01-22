@@ -101,7 +101,7 @@ func startUDPServer() {
 			continue
 		}
 
-		fmt.Println(buf[:n])
+		// fmt.Println(buf[:n])
 
 		// Send the received data (a slice of the buffer from the start to `n`) to the broadcast channel.
 		// This will be picked up by the `handleConnections` function.
