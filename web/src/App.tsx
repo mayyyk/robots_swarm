@@ -22,13 +22,15 @@ function App() {
 
   // The `useEffect` hook runs after the component renders. It's the right place to
   // establish the WebSocket connection.
-  // The empty dependency array `[]` at the end means this effect will only run ONCE,
+  // The empty dependency array `[]` at the end means this effect will only run ONCE, (actually in StrictMode it can run twice but it's just React checking if the connection closes correctly)
   // when the component is first mounted (similar to componentDidMount in class components).
   useEffect(() => {
     // Create a new WebSocket connection to the Go gateway.
     // The URL `ws://localhost:8081/ws` points to the port we exposed in `compose.yaml`.
     // "ws" stands for "WebSocket", similar to "http".
     const socket = new WebSocket("ws://localhost:8081/ws"); // port of the local machine (host)
+
+    console.log(socket);
 
     // --- WebSocket Event Handlers ---
 
