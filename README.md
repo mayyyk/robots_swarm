@@ -14,11 +14,11 @@ A real-time robot swarm simulation and visualization platform. The project utili
 
 This project is composed of three main files that work in concert:
 
--   `simulation/src/main.rs`: This is the engine of the simulation. It runs an infinite loop where it continuously generates data (in this case, the position of a robot) and sends it over UDP to the Gateway service. It's written in Rust for high performance.
+- `simulation/src/main.rs`: This is the engine of the simulation. It runs an infinite loop where it continuously generates data (in this case, the position of a robot) and sends it over UDP to the Gateway service. It's written in Rust for high performance.
 
--   `gateway/main.go`: This service acts as a bridge. It listens for the UDP data packets from the Rust simulation. As soon as it receives data, it relays it to all connected web clients using WebSockets. This allows for real-time communication from the backend to the frontend.
+- `gateway/main.go`: This service acts as a bridge. It listens for the UDP data packets from the Rust simulation. As soon as it receives data, it relays it to all connected web clients using WebSockets. This allows for real-time communication from the backend to the frontend.
 
--   `web/src/App.tsx`: This is the user-facing part of the application. It's a React component that establishes a WebSocket connection to the Go gateway. It then listens for incoming messages and displays the data on the screen, providing a live view of the simulation.
+- `web/src/App.tsx`: This is the user-facing part of the application. It's a React component that establishes a WebSocket connection to the Go gateway. It then listens for incoming messages and displays the data on the screen, providing a live view of the simulation.
 
 ## Quick Start (Docker)
 
@@ -56,6 +56,8 @@ cargo fmt
 
 # Run unit and logic tests
 cargo test
+
+cargo doc --no-deps --
 ```
 
 ### 2. Gateway (Go)

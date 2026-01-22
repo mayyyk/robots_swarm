@@ -6,6 +6,10 @@ COPY go.mod go.sum ./
 
 RUN go mod download
 
+# Install air for hot-reloading
+RUN go install github.com/air-verse/air@latest
+
 COPY . .
 
-CMD [ "go", "run", "main.go" ]
+# Use air to run the application
+CMD [ "air" ]

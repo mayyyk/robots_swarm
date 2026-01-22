@@ -2,7 +2,11 @@ FROM rust:latest
 
 WORKDIR /app
 
+
+# Install cargo-watch for hot-reloading
+RUN cargo install cargo-watch
+
 COPY . . 
 
-CMD ["cargo", "run"]
-
+# Use cargo-watch to run the application
+CMD ["cargo", "watch", "-x", "run"]

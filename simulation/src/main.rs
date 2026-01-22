@@ -1,7 +1,37 @@
 // The `use` keyword imports modules from the Rust standard library (`std`).
 // This allows us to use items defined in those modules, like `UdpSocket`.
-use std::net::UdpSocket; // For UDP (User Datagram Protocol) networking.
-use std::{thread, time}; // For pausing the execution thread and handling time durations.
+use nalgebra::Vector3;
+use serde_json;
+use std::net::UdpSocket;
+use std::thread;
+use std::time::Duration;
+
+pub fn modified_gram_schmidt_history(vectors: &mut Vec<Vector3<f32>>) -> Vec<Vec<Vector3<f32>>> {
+    let mut history = vec![vectors.clone()];
+    let n = vectors.len();
+
+    for i in 0..n {
+        // Current vector normalization
+        let norm = vectors[i].norm();
+
+        // getting unit vector
+        if norm > f32::EPSILON {
+            vectors[i] /= norm;
+        }
+        history.push(vectors.clone());
+
+        let v_i = vectors[i]; // Create a copy to resolve borrow checker error
+
+        for j in (i + 1)..n {
+            let proj = vectors[j].dot(&v_i);
+            vectors[j] -= v_i * proj;
+            history.push(vectors.clone());
+        }
+    }
+    history
+}
+
+
 
 /// The main function is the entry point of the Rust program.
 /// The `-> Result<(), Box<dyn std::error::Error>>` part is the return type.
@@ -11,63 +41,34 @@ use std::{thread, time}; // For pausing the execution thread and handling time d
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // --- Wait for Gateway to start ---
     println!("Simulation service started. Waiting 3 seconds for gateway to be ready...");
-    thread::sleep(time::Duration::from_secs(3));
+    thread::sleep(Duration::from_secs(3));
 
     // --- Network Setup ---
-
-    // Bind a UDP socket to an available port on any network interface.
-    // `UdpSocket::bind` attempts to create a new UDP socket.
-    // "0.0.0.0:0" means "listen on all available network interfaces on a random, available port".
-    // SYNTAX: `let` declares a variable. Variables are immutable by default in Rust.
-    // The `?` at the end is the "try" or "question mark" operator. It's for error handling.
-    // If the expression before it (`UdpSocket::bind(...)`) returns an `Err`, the function
-    // will immediately return that `Err`. If it's `Ok`, it will unwrap the value and assign it to `socket`.
     let socket = UdpSocket::bind("0.0.0.0:0")?;
-
-    // Connect the UDP socket to the gateway's address.
-    // "gateway:8000" works because Docker's networking will resolve the service name "gateway"
-    // to the correct container IP address. Port 8000 is what the Go gateway is listening on for UDP.
-    // Note: `connect` on a UDP socket doesn't establish a persistent connection like TCP. It just
-    // sets the default destination for `send` calls, so we don't have to specify it every time.
     socket.connect("gateway:8000")?;
-
-    // `println!` is a macro that prints a line to the console.
-    println!("Simulation started, sending data to Gateway via UDP");
+    println!("Simulation started, sending Gram-Schmidt steps to Gateway via UDP");
 
     // --- Simulation Loop ---
-
-    // Declare a mutable variable `x` and initialize it to 0.0.
-    // SYNTAX: `mut` makes a variable mutable, meaning its value can be changed later.
-    let mut x = 0.0;
-
-    // `loop` creates an infinite loop. The code inside will run forever until the program is stopped.
     loop {
-        // Increment the value of `x`.
-        x += 1.0;
+        // Define the initial set of vectors for this iteration.
+        let mut vecs = vec![
+            Vector3::new(2.0, 1.0, 0.0),
+            Vector3::new(1.0, 2.0, 0.0),
+            Vector3::new(1.0, 1.0, 1.5),
+        ];
 
-        // --- Create JSON Data ---
+        // Calculate the history of the Gram-Schmidt process.
+        let history = modified_gram_schmidt_history(&mut vecs);
 
-        // Create a JSON string with the robot's simulated position.
-        // `format!` is a macro that creates a `String` from a template.
-        // SYNTAX: `r#"{...}"#` is a "raw string". It allows you to write strings
-        // that contain special characters like `"` without needing to escape them.
-        // `{:.2}` is a format specifier that formats the `x` variable as a floating-point
-        // number with two decimal places.
-        let json_data = format!(r#"{{"id": "robot_1", "x": {:.2}, "y": 0.5}}"#, x);
+        // Send each step of the history to the frontend for visualization.
+        for vectors in history {
+            let payload = serde_json::to_string(&vectors)?;
+            socket.send(payload.as_bytes())?;
+            // Pause between steps to make the visualization viewable.
+            thread::sleep(Duration::from_millis(500));
+        }
 
-        // --- Send Data ---
-
-        // Send the JSON data as a byte slice over the UDP socket.
-        // `.as_bytes()` converts the `String` into a `&[u8]` (a byte slice).
-        // The `?` operator handles any potential error from the `send` operation.
-        socket.send(json_data.as_bytes())?;
-
-        // --- Control Loop Speed ---
-
-        // Pause the current thread for 16 milliseconds.
-        // This creates a loop that runs at approximately 60 frames per second (1000ms / 16ms ≈ 62.5 FPS).
-        // SYNTAX: `::` is the path separator, used to access functions, modules, or types
-        // within a crate or module (e.g., `thread::sleep`).
-        thread::sleep(time::Duration::from_millis(16));
+        // Pause before repeating the animation.
+        thread::sleep(Duration::from_secs(3));
     }
 }

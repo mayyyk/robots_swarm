@@ -2,10 +2,10 @@
 package main
 
 import (
-	"fmt"       // For formatted I/O (like printing to the console)
-	"net"       // For networking operations (UDP)
-	"net/http"  // For building HTTP servers and clients (WebSocket is built on top of HTTP)
-	"sync"      // Provides synchronization primitives, like mutexes
+	"fmt"      // For formatted I/O (like printing to the console)
+	"net"      // For networking operations (UDP)
+	"net/http" // For building HTTP servers and clients (WebSocket is built on top of HTTP)
+	"sync"     // Provides synchronization primitives, like mutexes
 
 	"github.com/gorilla/websocket" // A popular Go library for working with WebSockets
 )
@@ -51,16 +51,19 @@ func main() {
 	// SYNTAX: `go` keyword starts a new goroutine, which is like a lightweight thread managed by the Go runtime.
 	go startUDPServer()
 
+	// now it doesn't block the UDP server
+	go startBroadcaster()
+
 	// Register the handleConnections function to handle all incoming HTTP requests to the "/ws" endpoint.
 	// This is where clients will connect to establish a WebSocket connection.
 	http.HandleFunc("/ws", handleConnections)
 
 	// Start the HTTP server.
-	fmt.Println("Gateway listening on :8080 (WS) and :8000 (UDP)...")
+	fmt.Println("Gateway listening on :8081 (WS) and :8000 (UDP)...")
 	// http.ListenAndServe starts a server that listens on the specified TCP network address.
 	// This is a blocking call, so the main goroutine will be "stuck" here, keeping the server alive.
-	// The ":8080" is the port inside the Docker container.
-	err := http.ListenAndServe(":8080", nil) // inside port of the docker container
+	// The ":8081" is the port inside the Docker container.
+	err := http.ListenAndServe(":8081", nil) // inside port of the docker container
 	if err != nil {
 		// If the server fails to start (e.g., port is already in use), the program will exit.
 		// `panic` is a built-in function that stops the ordinary flow of control and begins panicking.
@@ -75,7 +78,7 @@ func startUDPServer() {
 	// Resolve the UDP address. ":8000" means it will listen on port 8000 on all available network interfaces.
 	// SYNTAX: `_` is the blank identifier. It's used to discard values you don't need. Here, we ignore the error.
 	addr, _ := net.ResolveUDPAddr("udp", ":8000")
-	
+
 	// Start listening for UDP packets on the resolved address.
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
@@ -97,7 +100,9 @@ func startUDPServer() {
 			// If there's an error, skip to the next iteration.
 			continue
 		}
-		
+
+		fmt.Println(buf[:n])
+
 		// Send the received data (a slice of the buffer from the start to `n`) to the broadcast channel.
 		// This will be picked up by the `handleConnections` function.
 		// SYNTAX: `channel <- value` sends a value into a channel.
@@ -124,25 +129,27 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Unlock the mutex so other goroutines can use it.
 	mutex.Unlock()
 
-	// --- Broadcast Loop ---
-	// This loop waits for a message to arrive on the `broadcast` channel.
-	// When a message is received, it's assigned to `msg` and the loop body executes.
-	for msg := range broadcast {
-		// Lock the mutex before iterating over the clients map.
+	for {
+		if _, _, err := ws.ReadMessage(); err != nil {
+			mutex.Lock()
+			delete(clients, ws)
+			mutex.Unlock()
+			break
+		}
+	}
+}
+
+func startBroadcaster() {
+	for {
+		msg := <-broadcast
 		mutex.Lock()
-		
-		// Iterate over all connected clients.
 		for client := range clients {
-			// Send the message to the current client.
 			err := client.WriteMessage(websocket.TextMessage, msg)
 			if err != nil {
-				// If there's an error (e.g., the client has disconnected),
-				// close their connection and remove them from the map.
 				client.Close()
 				delete(clients, client)
 			}
 		}
-		// Unlock the mutex after we're done with the `clients` map.
 		mutex.Unlock()
 	}
 }
